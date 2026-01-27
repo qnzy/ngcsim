@@ -1,3 +1,5 @@
+*This tool and the Readme have been generated using an LLM.*
+
 # NGCSIM - NGSpice Corner Simulation Tool
 
 A Python tool for running automated corner simulations on ngspice netlists.
