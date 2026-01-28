@@ -205,13 +205,11 @@ c0003,-40,2.7,ss,1.567e-09,2.789e-09
 * CMOS Inverter Corner Simulation
 ** ngc_param vdd_p 2.7 3.0 3.3
 ** ngc_param load_cap 1p 10p
-** ngc_lib ptm45.lib(nmos_typ) tt ff ss
-** ngc_lib ptm45.lib(pmos_typ) tt ff ss
+** ngc_lib ptm45.lib(tt) tt ff ss fs sf
 ** ngc_temp -40 27 125
 ** ngc_out tphl tplh power
 
-.lib /models/ptm45.lib nmos_typ
-.lib /models/ptm45.lib pmos_typ
+.lib /models/ptm45.lib tt
 
 .param vdd_p=3.0
 .param load_cap=1p
@@ -239,10 +237,10 @@ ngcsim -j 4 -o inverter_results.csv inverter.sp
 This will simulate:
 - 3 supply voltages (2.7V, 3.0V, 3.3V)
 - 2 load capacitances (1pF, 10pF)
-- 9 corner combinations for NMOS/PMOS (tt/tt, tt/ff, tt/ss, ff/tt, ff/ff, ff/ss, ss/tt, ss/ff, ss/ss)
+- 4 corner combinations for NMOS/PMOS (tt, ff, fs, sf)
 - 3 temperatures (-40°C, 27°C, 125°C)
 
-Total: 3 × 2 × 9 × 3 = 162 corners
+Total: 3 × 2 × 4 × 3 = 72 corners
 
 Results will be in `inverter_results.csv`.
 
