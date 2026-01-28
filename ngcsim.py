@@ -7,8 +7,8 @@
 
 OVERVIEW
 --------
-ngcsim is a tool for running corner simulations on ngspice netlists. It parses
-special configuration commands embedded as comments in your netlist and 
+ngcsim is a tool for automating corner simulations on ngspice netlists. It 
+parses special configuration commands embedded as comments in your netlist and 
 generates/runs simulations across all combinations of parameters, temperatures,
 and library corners.
 
@@ -21,7 +21,7 @@ starting with '*' or '**'). They must start with 'ngc_' to be recognized.
    Syntax: ngc_param <param_name> <value1> <value2> ... <valueN>
    
    Example:
-     ** ngc_param vdd_p 2.9 3.3 3.6
+     ** ngc_param vdd_p 2.7 3.0 3.3
      ** ngc_param timing_delay 1n 5n 10n
    
    The parameter names must match .param statements in your netlist.
@@ -30,12 +30,12 @@ starting with '*' or '**'). They must start with 'ngc_' to be recognized.
    Syntax: ngc_lib <library_file> [(<key>)] <corner1> <corner2> ... <cornerN>
    
    Examples:
-     ** ngc_lib sm141064.ngspice tt ff ss
-     ** ngc_lib sm141064.ngspice(typical) ff ss
-     ** ngc_lib resistors.lib(res_typ) res_fast res_slow
+     ** ngc_lib process.lib tt ff ss
+     ** ngc_lib models.lib(mos_typ) tt ff ss
+     ** ngc_lib models.lib(res_typ) res_nom res_fast res_slow
    
    - <library_file>: Name of the library file (path reused from .lib statement)
-   - (<key>): Optional key to match specific .lib statements (e.g., 'typical')
+   - (<key>): Optional key to match specific .lib statements (e.g., 'mos_typ')
    - <corner1...>: Corner names to substitute in .lib statements
    
    The tool finds '.lib <path>/<library_file> <key>' statements and replaces
@@ -45,7 +45,7 @@ starting with '*' or '**'). They must start with 'ngc_' to be recognized.
    Syntax: ngc_temp <temp1> <temp2> ... <tempN>
    
    Example:
-     ** ngc_temp -40 25 125
+     ** ngc_temp -40 27 125
    
    Temperatures are in Celsius. The tool will set the ngspice temperature.
 
@@ -61,14 +61,14 @@ starting with '*' or '**'). They must start with 'ngc_' to be recognized.
 NETLIST EXAMPLE
 ---------------
 * My Circuit Simulation
-** ngc_param vdd_p 2.9 3.3 3.6
+** ngc_param vdd_p 2.7 3.0 3.3
 ** ngc_param vss_p 0
-** ngc_lib sm141064.ngspice(typical) tt ff ss
-** ngc_temp -40 25 125
+** ngc_lib models.lib(mos_typ) tt ff ss
+** ngc_temp -40 27 125
 ** ngc_out delay_rise delay_fall power_total
 
-.lib /path/to/libs/sm141064.ngspice typical
-.param vdd_p=3.3
+.lib /path/to/libs/models.lib mos_typ
+.param vdd_p=3.0
 .param vss_p=0
 
 * Your circuit here
@@ -90,6 +90,7 @@ Options:
   -k, --keep-netlists     Keep generated corner netlists in /tmp folder
   -j N, --parallel N      Run N simulations in parallel (default: 1)
   -o FILE, --output FILE  Output CSV file (default: <netlist>_corners.csv)
+  -n, --no-run            Generate netlists only, do not run simulations
   -h, --help              Show help message
 
 Examples:
@@ -98,6 +99,9 @@ Examples:
   
   # Keep generated netlists and run 4 simulations in parallel
   ngcsim -k -j 4 my_circuit.sp
+  
+  # Generate netlists only without running simulations
+  ngcsim -k -n my_circuit.sp
   
   # Specify custom output file
   ngcsim -o results.csv my_circuit.sp
@@ -113,7 +117,7 @@ Results are saved to a CSV file with columns:
 
 The corner_id can be used to identify and re-simulate specific corners.
 When using --keep-netlists, the corner netlists are saved with filenames
-matching their corner_id (e.g., c0001.sp, c0002.sp).
+matching their corner_id (e.g., c0001.sp, c0002.sp)
 
 DEPENDENCIES
 ------------
@@ -267,17 +271,16 @@ class CornerGenerator:
         temp_inserted = False
         
         for line in self.lines:
-            # Skip ngc_ configuration lines
+            # Skip ngc_ configuration lines (keep as comments)
             stripped = line.strip()
             if stripped.lstrip('*').strip().startswith('ngc_'):
-                modified_lines.append(line)  # Keep as comment
+                modified_lines.append(line)
                 continue
             
             modified_line = line
             
             # Replace .param statements
             for param_name, param_value in corner['params'].items():
-                # Match .param statements with various formats
                 pattern = r'^(\s*\.param\s+' + re.escape(param_name) + r'\s*=\s*)([^\s]+)(.*)'
                 match = re.match(pattern, modified_line, re.IGNORECASE)
                 if match:
@@ -285,7 +288,6 @@ class CornerGenerator:
             
             # Replace .lib statements
             for (libfile, key), corner_value in corner['libs'].items():
-                # Match .lib statements
                 pattern = r'^(\s*\.lib\s+)(.*)/' + re.escape(libfile) + r'(\s+)(\S+)(.*)'
                 match = re.match(pattern, modified_line, re.IGNORECASE)
                 if match:
@@ -305,7 +307,7 @@ class CornerGenerator:
             
             modified_lines.append(modified_line)
             
-            # Insert temperature after first analysis command if not yet inserted
+            # Insert temperature before first analysis command if not yet inserted
             if not temp_inserted and re.match(r'^\s*\.(tran|ac|dc|op)\s', modified_line, re.IGNORECASE):
                 # Insert .temp before the analysis command
                 modified_lines[-1] = f".temp {corner['temperature']}\n"
@@ -314,7 +316,6 @@ class CornerGenerator:
         
         # If temperature was never inserted, add it before .end
         if not temp_inserted:
-            # Find .end and insert before it
             for i in range(len(modified_lines) - 1, -1, -1):
                 if re.match(r'^\s*\.end', modified_lines[i], re.IGNORECASE):
                     modified_lines.insert(i, f".temp {corner['temperature']}\n")
@@ -422,6 +423,8 @@ def main():
     parser.add_argument('-j', '--parallel', type=int, default=1, metavar='N',
                        help='Run N simulations in parallel (default: 1)')
     parser.add_argument('-o', '--output', help='Output CSV file (default: <netlist>_corners.csv)')
+    parser.add_argument('-n', '--no-run', action='store_true',
+                       help='Generate netlists only, do not run simulations (useful with -k)')
     
     args = parser.parse_args()
     
@@ -451,10 +454,18 @@ def main():
     print(f"  - Found {len(config.libs)} library/libraries")
     print(f"  - Found {len(config.temps) if config.temps else 1} temperature(s)")
     print(f"  - Found {len(config.outputs)} output measure(s)")
+    
+    if not config.outputs:
+        print("  ⚠ Warning: No ngc_out measurements defined - no data will be extracted")
+    
     print()
     
     # Generate corners
     print("[2/5] Generating corner combinations...")
+    
+    if not config.params and not config.libs and not config.temps and not config.outputs:
+        print("  ⚠ Warning: No ngc_ configuration found - will run single simulation at 25°C")
+    
     generator = CornerGenerator(lines, config, args.netlist)
     corners = generator.generate_corners()
     print(f"  - Total corners to simulate: {len(corners)}")
@@ -473,6 +484,27 @@ def main():
     
     print(f"  - Created {len(netlist_paths)} netlist(s)")
     print()
+    
+    # Check if we should skip simulation
+    if args.no_run:
+        print("[4/5] Skipping simulations (--no-run specified)")
+        print()
+        print("[5/5] No results to write (simulations not run)")
+        print()
+        
+        if args.keep_netlists:
+            print(f"Corner netlists preserved in: {temp_dir}")
+        else:
+            print("⚠ Warning: --no-run without --keep-netlists will delete generated netlists")
+            import shutil
+            shutil.rmtree(temp_dir)
+            print(f"Temporary netlists removed: {temp_dir}")
+        
+        print()
+        print("╔═══════════════════════════════════════════════════════════════════════════╗")
+        print("║                      Netlist Generation Complete!                        ║")
+        print("╚═══════════════════════════════════════════════════════════════════════════╝")
+        return
     
     # Run simulations
     print(f"[4/5] Running simulations (parallel jobs: {args.parallel})...")
@@ -507,6 +539,9 @@ def main():
     
     print(f"  - Completed {len(results)} simulation(s)")
     print()
+    
+    # Sort results by corner_id
+    results.sort(key=lambda x: x['corner_id'])
     
     # Write results to CSV
     print(f"[5/5] Writing results to: {output_file}")

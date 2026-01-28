@@ -131,7 +131,7 @@ These names must match `.measure` statements in your netlist.
 ## Command Line Options
 
 ```
-usage: ngcsim [-h] [-k] [-j N] [-o FILE] netlist
+usage: ngcsim [-h] [-k] [-j N] [-o FILE] [-n] netlist
 
 positional arguments:
   netlist               Input netlist file
@@ -142,6 +142,7 @@ optional arguments:
   -j N, --parallel N    Run N simulations in parallel (default: 1)
   -o FILE, --output FILE
                         Output CSV file (default: <netlist>_corners.csv)
+  -n, --no-run          Generate netlists only, do not run simulations
 ```
 
 ### Examples
@@ -169,6 +170,11 @@ ngcsim -o my_results.csv circuit.sp
 **Combine options:**
 ```bash
 ngcsim -k -j 4 -o results.csv circuit.sp
+```
+
+**Generate netlists only (for manual inspection or external runner):**
+```bash
+ngcsim -k -n circuit.sp
 ```
 
 ## Output Format
@@ -245,9 +251,10 @@ Results will be in `inverter_results.csv`.
 1. **Start Small**: Test with a few corners first before running hundreds of simulations
 2. **Use Parallel Execution**: The `-j` option can significantly speed up large corner sweeps
 3. **Keep Netlists for Debugging**: Use `-k` when developing to inspect generated netlists
-4. **Organize Outputs**: Use descriptive output filenames for different experiments
-5. **Check Measurements**: Ensure your `.measure` statements work correctly in a single simulation first
-6. **Library Paths**: Keep library paths absolute or relative to where you run ngcsim
+4. **Generate First, Run Later**: Use `-k -n` to generate all corner netlists, inspect them, then run manually or with external tools
+5. **Organize Outputs**: Use descriptive output filenames for different experiments
+6. **Check Measurements**: Ensure your `.measure` statements work correctly in a single simulation first
+7. **Library Paths**: Keep library paths absolute or relative to where you run ngcsim
 
 ## Troubleshooting
 
