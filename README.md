@@ -86,12 +86,12 @@ Define library corner substitutions.
 ** ngc_lib process.lib tt ff ss
 
 * With sublibrary key
-** ngc_lib models.lib(mos_typ) tt ff ss
-** ngc_lib models.lib(res_typ) res_nom res_fast res_slow
+** ngc_lib models.lib(tt) tt ff ss
+** ngc_lib models.lib(res_nom) res_nom res_fast res_slow
 
 * Multiple libraries
-** ngc_lib transistors.ngspice(typical) tt ff ss
-** ngc_lib resistors.ngspice(nominal) fast slow
+** ngc_lib transistors.ngspice(tt) tt ff ss
+** ngc_lib resistors.ngspice(fast) fast slow
 ```
 
 The tool finds `.lib` statements matching the library file and optional key, then replaces the key with each corner name. Whitespace around the key is ignored.
