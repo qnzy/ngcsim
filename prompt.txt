@@ -1,3 +1,5 @@
+*This prompt has been generated with an LLM.*
+
 PROMPT FOR CREATING NGCSIM - NGSPICE CORNER SIMULATION TOOL
 ============================================================
 
