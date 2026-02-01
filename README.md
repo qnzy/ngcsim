@@ -1,4 +1,3 @@
-*This tool and the Readme have been generated using an LLM.*
 
 # NGCSIM - NGSpice Corner Simulation Tool
 
