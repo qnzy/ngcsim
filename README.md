@@ -35,7 +35,7 @@ sudo cp ngcsim.py /usr/local/bin/ngcsim
 ```spice
 * My Circuit
 ** ngc_param vdd_p 2.7 3.0 3.3
-** ngc_lib technology.lib(typical) tt ff ss
+** ngc_lib technology.lib(tt) tt ff ss
 ** ngc_temp -40 27 125
 ** ngc_out delay power
 
