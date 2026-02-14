@@ -1,4 +1,4 @@
-**Note: This has been largely superseeded by https://github.com/qnzy/ngplot**
+**Note: This has been largely superseeded by https://github.com/qnzy/ngrun**
 
 
 # NGCSIM - NGSpice Corner Simulation Tool
