@@ -1,3 +1,5 @@
+**Note: This has been largely superseeded by https://github.com/qnzy/ngplot**
+
 
 # NGCSIM - NGSpice Corner Simulation Tool
 
